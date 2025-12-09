@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roteiro Cabo Frio 24/25 - Cond. Pássaros</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #0088cc;
+            --secondary: #ff6b6b;
+            --bg: #f4f7f6;
+            --text: #333;
+            --card-bg: #fff;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg); color: var(--text); }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--primary), #005f8f);
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .header-info { font-size: 0.9rem; opacity: 0.9; margin-top: 5px; }
+
+        /* Navigation Filters */
+        .filters {
+            display: flex;
+            overflow-x: auto;
+            padding: 1rem;
+            gap: 10px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            background: #eee;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.3s;
+            font-size: 0.9rem;
+        }
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Layout Grid */
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            height: calc(100vh - 140px);
+        }
+
+        /* Lista de Cards */
+        .cards-container {
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--primary);
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-2px); }
+        .card h3 { color: var(--primary); margin-bottom: 5px; display: flex; justify-content: space-between;}
+        .card .tag { font-size: 0.75rem; background: #eee; padding: 2px 8px; border-radius: 4px; color: #666; }
+        .card p { font-size: 0.9rem; margin: 5px 0; line-height: 1.4; }
+        .card .meta { font-size: 0.85rem; color: #666; margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap;}
+        .card .meta span { display: flex; align-items: center; gap: 4px; }
+        .card .actions { margin-top: 10px; display: flex; gap: 10px; }
+        .btn-link { 
+            text-decoration: none; 
+            background: var(--secondary); 
+            color: white; 
+            padding: 6px 12px; 
+            border-radius: 6px; 
+            font-size: 0.8rem; 
+            display: inline-block;
+        }
+
+        /* Mapa */
+        #map {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            height: 100%;
+            min-height: 400px;
+        }
+
+        /* Roteiro Section Special Styling */
+        .roteiro-day {
+            border-left-color: var(--secondary);
+            background: #fff5f5;
+        }
+        .roteiro-day h4 { color: #d63031; margin-bottom: 5px;}
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; height: auto; }
+            #map { height: 300px; margin-bottom: 20px; order: -1; } /* Mapa em cima no mobile */
+            .cards-container { height: auto; overflow-y: visible; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🌴 Cabo Frio 2024/25</h1>
+    <div class="header-info">📍 Base: Condomínio dos Pássaros | 📅 27/Dez - 05/Jan</div>
+</header>
+
+<div class="filters" id="filterContainer">
+    <button class="filter-btn active" onclick="filterData('all')">Tudo</button>
+    <button class="filter-btn" onclick="filterData('roteiro')">📅 Roteiro Sugerido</button>
+    <button class="filter-btn" onclick="filterData('praias')">🏖️ Praias</button>
+    <button class="filter-btn" onclick="filterData('gastronomia')">🍽️ Gastronomia</button>
+    <button class="filter-btn" onclick="filterData('noite')">🎉 Noite/Réveillon</button>
+    <button class="filter-btn" onclick="filterData('servicos')">🛒 Serviços</button>
+    <button class="filter-btn" onclick="filterData('fitness')">💪 Saúde/Fit</button>
+    <button class="filter-btn" onclick="filterData('cultura')">🏛️ Cultura</button>
+</div>
+
+<div class="container">
+    <div class="cards-container" id="cardsList">
+        </div>
+    <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    // 1. DADOS (JSON INTEGRADO)
+    const db = [
+        // Roteiro (Dados Especiais sem coordenadas de mapa direto, ou usando a do primeiro ponto)
+        { category: "roteiro", title: "Dia 29/12: Aclimatação Peró", desc: "Manhã: Praia do Peró (Lado esquerdo). <br>Noite: Jantar no Box 60 (Cajueiro).", meta: "Relax | Local", lat: -22.8688, lng: -41.9855 },
+        { category: "roteiro", title: "Dia 30/12: Búzios Day Trip", desc: "Manhã: Praia de Geribá. <br>Tarde: Pôr do sol Porto da Barra. <br>Noite: Rua das Pedras.", meta: "Passeio | Trânsito Médio", lat: -22.7758, lng: -41.9056 },
+        { category: "roteiro", title: "Dia 31/12: O Grande Dia", desc: "Manhã: Ilha do Japonês (Barco-táxi). <br>Noite: Ceia em casa ou Festa na Praia do Forte (Cuidado trânsito).", meta: "Réveillon", lat: -22.8732, lng: -41.9987 },
+        { category: "roteiro", title: "Dia 01/01: Relax Pós-Festa", desc: "Tarde: Praia das Conchas (calma). <br>Noite: Bairro da Passagem (Centro Histórico).", meta: "Descanso", lat: -22.8715, lng: -41.9820 },
+        { category: "roteiro", title: "Dia 02/01: Cultura", desc: "Forte São Mateus + Mirante da Guia. <br>Noite: Boulevard Canal.", meta: "Turismo", lat: -22.8824, lng: -42.0097 },
+
+        // Locais Reais
+        { id: 1, category: "praias", name: "Praia do Peró", desc: "Bandeira Azul. Águas limpas, extensa. 5 min do condomínio.", meta: "🚗 3km | 👥 Médio", lat: -22.8688, lng: -41.9855, link: "https://maps.app.goo.gl/pero" },
+        { id: 2, category: "praias", name: "Ilha do Japonês", desc: "Águas calmas e cristalinas. Ideal para relaxar.", meta: "🚗 10 min | 👥 Alto", lat: -22.8732, lng: -41.9987, link: "https://maps.app.goo.gl/japones" },
+        { id: 3, category: "praias", name: "Praia de Geribá (Búzios)", desc: "Badalação e ondas. Ponto de encontro jovem.", meta: "🚗 30 min | 👥 Muito Alto", lat: -22.7758, lng: -41.9056, link: "https://maps.app.goo.gl/geriba" },
+        { id: 4, category: "gastronomia", name: "Polo Gastronômico Passagem", desc: "Charme histórico. Várias opções de restaurantes e música.", meta: "💰 $$ - $$$ | ⭐ 4.8", lat: -22.8856, lng: -42.0165, link: "https://maps.app.goo.gl/passagem" },
+        { id: 5, category: "gastronomia", name: "Box 60 (Peró)", desc: "Container market descontraído, perto de casa.", meta: "💰 $$ | ⭐ 4.5", lat: -22.8650, lng: -41.9900, link: "https://maps.app.goo.gl/box60" },
+        { id: 6, category: "noite", name: "Réveillon Praia do Forte", desc: "Queima de fogos oficial. Gratuito.", meta: "🎉 Público | 👥 Lotado", lat: -22.8901, lng: -42.0123, link: "https://cabofrio.rj.gov.br" },
+        { id: 7, category: "noite", name: "Privilège Búzios", desc: "Balada premium e festas de fim de ano.", meta: "💰 $$$$ | Ingressos Online", lat: -22.7725, lng: -41.9080, link: "https://www.privilegebrasil.com" },
+        { id: 8, category: "servicos", name: "Supermercado do Peró", desc: "Principal mercado da região do Peró.", meta: "🛒 Essencial | 07h-22h", lat: -22.8631, lng: -41.9890, link: "https://maps.app.goo.gl/mercado" },
+        { id: 9, category: "fitness", name: "Smart Fit Cabo Frio", desc: "Centro. Aceita TotalPass/GymPass (Black).", meta: "💪 GymPass | Ar Cond.", lat: -22.8800, lng: -42.0200, link: "https://www.smartfit.com.br" },
+        { id: 10, category: "cultura", name: "Forte de São Mateus", desc: "História e vista clássica de 1620.", meta: "📸 Grátis | 08h-18h", lat: -22.8824, lng: -42.0097, link: "https://maps.app.goo.gl/forte" }
+    ];
+
+    // 2. INICIALIZAÇÃO DO MAPA
+    // Centralizado entre Peró e Centro de CF
+    const map = L.map('map').setView([-22.875, -42.000], 13);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Ícone personalizado (marcador simples)
+    const markers = [];
+
+    // Adiciona marcador do Condomínio (Ponto Central)
+    const homeIcon = L.divIcon({className: 'custom-icon', html: '🏠', iconSize: [24, 24]});
+    L.marker([-22.8615, -41.9750], {icon: homeIcon}).addTo(map).bindPopup("<b>Base:</b> Condomínio dos Pássaros");
+
+    // 3. FUNÇÕES DE RENDERIZAÇÃO
+    function renderCards(filter) {
+        const container = document.getElementById('cardsList');
+        container.innerHTML = '';
+        
+        // Limpa marcadores antigos
+        markers.forEach(m => map.removeLayer(m));
+        markers.length = 0;
+
+        const filteredData = filter === 'all' 
+            ? db.filter(item => item.category !== 'roteiro') 
+            : db.filter(item => item.category === filter || (filter === 'noite' && item.subcategoria === 'reveillon'));
+
+        filteredData.forEach(item => {
+            // Cria Card HTML
+            const card = document.createElement('div');
+            card.className = item.category === 'roteiro' ? 'card roteiro-day' : 'card';
+            
+            let html = `
+                <h3>${item.name || item.title} <span class="tag">${item.category.toUpperCase()}</span></h3>
+                <p>${item.desc || item.descricao}</p>
+                <div class="meta">
+                    <span>${item.meta}</span>
+                </div>
+            `;
+            
+            if(item.link) {
+                html += `<div class="actions"><a href="${item.link}" target="_blank" class="btn-link">Ver/Navegar 🔗</a></div>`;
+            }
+
+            card.innerHTML = html;
+            
+            // Adiciona evento de clique para zoom no mapa
+            card.addEventListener('click', () => {
+                map.flyTo([item.lat, item.lng], 15);
+            });
+
+            container.appendChild(card);
+
+            // Adiciona Marcador no Mapa
+            if(item.lat && item.lng) {
+                const marker = L.marker([item.lat, item.lng])
+                    .addTo(map)
+                    .bindPopup(`<b>${item.name || item.title}</b><br>${item.meta}`);
+                markers.push(marker);
+            }
+        });
+
+        // Ajusta botões ativos
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active'); // Nota: "event" implícito no onclick inline
+    }
+
+    // Função Wrapper para chamar do HTML e gerenciar classe Active manualmente se necessário
+    window.filterData = function(cat) {
+        // Correção para highlight do botão
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if(btn.innerText.toLowerCase().includes(cat) || (cat === 'all' && btn.innerText === 'Tudo')) {
+                btn.classList.add('active');
+            }
+        });
+        renderCards(cat);
+    }
+
+    // Renderiza inicial
+    renderCards('all');
+
+</script>
+</body>
+</html>
