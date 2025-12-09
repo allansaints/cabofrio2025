@@ -3,465 +3,556 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Guia Cabo Frio 2025</title>
+    <title>Roteiro Costa do Sol 2025</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
-            --primary: #007AFF;
-            --bg: #F2F2F7;
-            --card-bg: #FFFFFF;
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --primary-blue: #007AFF; /* iOS Blue */
+            --accent-green: #34C759; /* iOS Green */
+            --accent-orange: #FF9500; /* iOS Orange */
             --text-main: #1C1C1E;
             --text-sec: #8E8E93;
-            --separator: #C6C6C8;
+            --card-radius: 18px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f2f2f7;
             color: var(--text-main);
-            height: 100vh;
+            overflow: hidden; /* Vital para o layout split */
+            height: 100dvh; /* Dynamic Viewport Height */
+            width: 100vw;
+        }
+
+        /* Mesh Gradient Background Animation */
+        .mesh-background {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                        radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                        radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-size: 200% 200%;
+            animation: meshAnimate 15s ease infinite;
+        }
+
+        @keyframes meshAnimate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- LAYOUT STRUCTURE --- */
+        .app-container {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Sidebar / Bottom Sheet Area */
+        .content-area {
+            width: 420px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid var(--glass-border);
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Impede scroll na pagina inteira, apenas nas areas certas */
-        }
-
-        /* --- HEADER --- */
-        header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--separator);
-            padding: 12px 16px;
             z-index: 1000;
+            box-shadow: var(--glass-shadow);
             flex-shrink: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .app-title h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.5px; }
-        .app-title span { font-size: 0.75rem; color: var(--text-sec); display: block; }
-        
-        .roteiro-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,122,255,0.3);
-            transition: transform 0.1s;
-        }
-        .roteiro-btn:active { transform: scale(0.95); }
-
-        /* --- FILTROS (Scroll Horizontal) --- */
-        .filters-container {
-            background: var(--bg);
-            padding: 10px 16px;
-            overflow-x: auto;
-            white-space: nowrap;
-            flex-shrink: 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            /* Hide scrollbar */
-            -ms-overflow-style: none; scrollbar-width: none;
-        }
-        .filters-container::-webkit-scrollbar { display: none; }
-
-        .chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            background: white;
-            border: 1px solid #D1D1D6;
-            border-radius: 100px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            color: var(--text-main);
-            margin-right: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .chip.active {
-            background: var(--text-main);
-            color: white;
-            border-color: var(--text-main);
-            font-weight: 600;
-        }
-        .chip i { font-size: 0.9rem; }
-
-        /* --- ÁREA PRINCIPAL (Split View) --- */
-        .main-content {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            position: relative;
         }
 
-        /* Coluna da Lista */
-        .list-view {
-            width: 450px;
-            overflow-y: auto;
-            background: var(--bg);
-            padding: 16px;
-            border-right: 1px solid var(--separator);
-            z-index: 10;
-        }
-
-        /* O Mapa */
-        .map-view {
-            flex: 1;
-            background: #e5e3df;
+        /* Map Area */
+        .map-area {
+            flex-grow: 1;
             position: relative;
             z-index: 1;
         }
-        #map { width: 100%; height: 100%; }
 
-        /* --- CARDS --- */
-        .card {
-            background: var(--card-bg);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            cursor: pointer;
-            transition: background 0.2s;
-            border: 1px solid rgba(0,0,0,0.03);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #e5e5f7; /* Placeholder color */
         }
-        .card:hover { background: #fafafa; }
-        .card:active { transform: scale(0.99); }
 
-        .card-header { display: flex; justify-content: space-between; align-items: start; }
-        .card-title { font-weight: 700; font-size: 1rem; color: #000; line-height: 1.2; }
-        .card-cat { font-size: 0.7rem; text-transform: uppercase; color: var(--text-sec); font-weight: 600; letter-spacing: 0.5px; }
+        /* --- UI COMPONENTS --- */
         
-        .card-info { display: flex; gap: 12px; font-size: 0.8rem; color: var(--text-sec); margin-top: 4px; }
-        .info-tag { display: flex; align-items: center; gap: 4px; }
-        
-        .rating-badge { 
-            background: #FFF9E6; color: #F5A623; 
-            padding: 2px 6px; border-radius: 4px; 
-            font-weight: 700; font-size: 0.75rem; 
-        }
-
-        .action-link {
-            text-decoration: none;
-            color: var(--primary);
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-top: 8px;
-            display: inline-block;
-        }
-
-        /* Estilo Timeline (Roteiro) */
-        .timeline-card {
-            border-left: 4px solid var(--primary);
-            background: #F0F9FF;
-        }
-        .day-label {
-            background: var(--primary); color: white;
-            display: inline-block; padding: 4px 8px;
-            border-radius: 4px; font-size: 0.7rem; font-weight: 700;
-            text-transform: uppercase; margin-bottom: 5px;
-        }
-
-        /* --- RESPONSIVIDADE (MOBILE) --- */
-        @media (max-width: 768px) {
-            .main-content {
-                flex-direction: column;
-            }
-            .list-view {
-                width: 100%;
-                height: 55%; /* Lista ocupa 55% da tela */
-                order: 2; /* Lista fica embaixo */
-                border-right: none;
-                border-top: 1px solid var(--separator);
-                padding-bottom: 40px; /* Espaço extra scroll */
-            }
-            .map-view {
-                height: 45%; /* Mapa ocupa 45% da tela */
-                order: 1; /* Mapa fica em cima */
-            }
-        }
-        
-        /* Ajuste para marcadores customizados */
-        .custom-div-icon {
+        /* Header */
+        .header {
+            padding: 20px 20px 10px 20px;
             background: transparent;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            letter-spacing: -0.5px;
+        }
+
+        /* Filters (Pills) */
+        .filters-container {
+            padding: 5px 20px 15px 20px;
+            overflow-x: auto;
+            white-space: nowrap;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .filters-container::-webkit-scrollbar { display: none; }
+
+        .filter-pill {
+            display: inline-block;
+            padding: 8px 16px;
+            margin-right: 8px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: rgba(255,255,255,0.4);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .filter-pill.active {
+            background: var(--text-main);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: scale(1.02);
+        }
+
+        .filter-pill.special {
+            background: linear-gradient(135deg, #FF3B30, #FF9500);
+            color: white;
             border: none;
         }
-        .marker-pin {
-            width: 30px;
-            height: 30px;
-            border-radius: 50% 50% 50% 0;
-            background: var(--primary);
-            position: absolute;
-            transform: rotate(-45deg);
-            left: 50%;
-            top: 50%;
-            margin: -15px 0 0 -15px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+
+        /* Scrollable List */
+        .list-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            scroll-behavior: smooth;
+        }
+
+        /* Cards */
+        .card {
+            background: rgba(255,255,255,0.6);
+            border-radius: var(--card-radius);
+            padding: 12px;
+            margin-bottom: 20px;
             display: flex;
-            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            background: rgba(255,255,255,0.85);
+        }
+
+        .card-img {
+            width: 90px;
+            height: 90px;
+            border-radius: 12px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background-color: #ddd;
+        }
+
+        .card-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .card-desc {
+            font-size: 12px;
+            color: var(--text-sec);
+            margin: 4px 0;
+            line-height: 1.3;
+        }
+
+        .badge-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .badge {
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge.price { background: #E5E5EA; color: #333; }
+        .badge.rating { background: #FFD60A; color: #000; }
+        
+        .golden-tip {
+            font-size: 11px;
+            color: #854d0e;
+            background: #fef9c3;
+            padding: 6px;
+            border-radius: 8px;
+            margin-top: 8px;
+            display: flex;
             align-items: center;
+            gap: 5px;
         }
-        .marker-pin::after {
+
+        .btn-nav {
+            display: inline-block;
+            margin-top: 8px;
+            text-decoration: none;
+            color: var(--primary-blue);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Timeline Styles for Roteiro */
+        .timeline-container {
+            border-left: 2px solid rgba(0,0,0,0.1);
+            margin-left: 10px;
+            padding-left: 20px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .timeline-item::before {
             content: '';
-            width: 14px;
-            height: 14px;
-            margin: 8px 0 0 8px;
-            background: #fff;
             position: absolute;
+            left: -26px;
+            top: 15px;
+            width: 10px;
+            height: 10px;
+            background: var(--primary-blue);
             border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 0 0 3px rgba(0,122,255,0.2);
         }
-        .marker-icon {
-            position: absolute;
-            width: 22px;
-            font-size: 14px;
-            left: 0;
-            right: 0;
-            margin: 8px auto;
+
+        .timeline-date {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--primary-blue);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        /* Map Markers Styling */
+        .custom-marker {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             text-align: center;
-            color: var(--text-main);
-            z-index: 100;
-            transform: rotate(45deg); /* Compensa a rotação do pin */
+            font-size: 16px;
+            line-height: 30px;
+            width: 30px !important;
+            height: 30px !important;
+            margin-left: -15px !important;
+            margin-top: -15px !important;
+        }
+
+        /* --- MOBILE LAYOUT --- */
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column; /* Mapa em cima, Lista em baixo */
+            }
+
+            .map-area {
+                height: 40vh; /* 40% da tela */
+                flex-grow: 0;
+            }
+
+            .content-area {
+                width: 100%;
+                height: 60vh; /* 60% da tela */
+                border-right: none;
+                border-top: 1px solid var(--glass-border);
+                border-radius: 24px 24px 0 0;
+                margin-top: -20px; /* Sobreposição leve no mapa */
+                padding-top: 10px;
+            }
+
+            /* Handle visual para puxar (estético) */
+            .content-area::before {
+                content: '';
+                display: block;
+                width: 40px;
+                height: 4px;
+                background: rgba(0,0,0,0.2);
+                margin: 0 auto 10px auto;
+                border-radius: 2px;
+            }
         }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="app-title">
-        <h1>Cabo Frio 2025</h1>
-        <span>Condomínio dos Pássaros</span>
-    </div>
-    <button class="roteiro-btn" onclick="filterData('roteiro')">
-        <i class="far fa-calendar-alt"></i> Ver Roteiro
-    </button>
-</header>
+    <div class="mesh-background"></div>
 
-<div class="filters-container">
-    <div class="chip active" onclick="filterData('all', this)"><i class="fas fa-layer-group"></i> Tudo</div>
-    <div class="chip" onclick="filterData('praias', this)"><i class="fas fa-umbrella-beach"></i> Praias</div>
-    <div class="chip" onclick="filterData('gastronomia', this)"><i class="fas fa-utensils"></i> Comer</div>
-    <div class="chip" onclick="filterData('noite', this)"><i class="fas fa-cocktail"></i> Noite</div>
-    <div class="chip" onclick="filterData('servicos', this)"><i class="fas fa-shopping-cart"></i> Mercados/Pão</div>
-    <div class="chip" onclick="filterData('fitness', this)"><i class="fas fa-dumbbell"></i> Fitness</div>
-    <div class="chip" onclick="filterData('saude', this)"><i class="fas fa-heartbeat"></i> Farmácia</div>
-    <div class="chip" onclick="filterData('lazer', this)"><i class="fas fa-camera"></i> Lazer/Fotos</div>
-</div>
-
-<div class="main-content">
-    
-    <div class="map-view">
-        <div id="map"></div>
-    </div>
-
-    <div class="list-view" id="cards-container">
+    <div class="app-container">
+        
+        <div class="map-area">
+            <div id="map"></div>
         </div>
-    
-</div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <div class="content-area">
+            <div class="header">
+                <h1>Roteiro Lagos 24/25</h1>
+                <p style="font-size: 12px; opacity: 0.7; margin:0;">Base: Condomínio dos Pássaros</p>
+            </div>
 
-<script>
-    /* --- CONFIGURAÇÃO --- */
-    // Coordenadas corrigidas para Estrada do Guriri (Entrada Cond. Pássaros)
-    const HOME_COORDS = [-22.8475, -41.9980]; 
+            <div class="filters-container">
+                <div class="filter-pill special" onclick="filterData('roteiro')">📅 Roteiro Dia a Dia</div>
+                <div class="filter-pill" onclick="filterData('praias')">🏖️ Praias</div>
+                <div class="filter-pill" onclick="filterData('gastronomia')">🍤 Gastronomia</div>
+                <div class="filter-pill" onclick="filterData('noite')">🍸 Noite</div>
+                <div class="filter-pill" onclick="filterData('servicos')">🛒 Serviços</div>
+                <div class="filter-pill" onclick="filterData('fitness')">💪 Fitness</div>
+                <div class="filter-pill" onclick="filterData('saude')">🏥 Saúde</div>
+            </div>
 
-    /* --- BASE DE DADOS EXTENSA (SIMULAÇÃO JSON REAL) --- */
-    const db = [
-        // === ROTEIRO ===
-        { id: 'r1', cat: 'roteiro', title: 'Chegada & Relax', day: '29/12 • DOM', desc: 'Foco no Peró e Compras Básicas.', lat: -22.8688, lng: -41.9855 },
-        { id: 'r2', cat: 'roteiro', title: 'Búzios Experience', day: '30/12 • SEG', desc: 'Geribá cedo + Pôr do Sol no Porto.', lat: -22.7758, lng: -41.9056 },
-        { id: 'r3', cat: 'roteiro', title: 'Logística Réveillon', day: '31/12 • TER', desc: 'Ilha do Japonês de manhã. Zero carro a noite.', lat: -22.8732, lng: -41.9987 },
-        { id: 'r4', cat: 'roteiro', title: 'Detox Pós-Festa', day: '01/01 • QUA', desc: 'Praia das Conchas e Centro Histórico.', lat: -22.8715, lng: -41.9820 },
-        { id: 'r5', cat: 'roteiro', title: 'Cultura & Despedida', day: '02/01 • QUI', desc: 'Forte São Mateus e Rua dos Biquínis.', lat: -22.8824, lng: -42.0097 },
-
-        // === PRAIAS (20 opções variadas na região) ===
-        { cat: 'praias', title: 'Praia do Peró', rating: '4.8', desc: 'Bandeira Azul. A mais limpa e próxima.', lat: -22.8688, lng: -41.9855 },
-        { cat: 'praias', title: 'Ilha do Japonês', rating: '4.7', desc: 'Águas rasas. Vá de barco-táxi.', lat: -22.8732, lng: -41.9987 },
-        { cat: 'praias', title: 'Praia das Conchas', rating: '4.8', desc: 'Ao lado do Peró. Mar piscininha.', lat: -22.8715, lng: -41.9820 },
-        { cat: 'praias', title: 'Praia do Forte', rating: '4.9', desc: 'A principal. Areia branca, muito cheia.', lat: -22.8920, lng: -42.0150 },
-        { cat: 'praias', title: 'Praia das Dunas', rating: '4.6', desc: 'Continuação do Forte, menos gente, ondas fortes.', lat: -22.8950, lng: -42.0250 },
-        { cat: 'praias', title: 'Praia do Foguete', rating: '4.5', desc: 'Mar aberto, água fria, ótimo visual.', lat: -22.9100, lng: -42.0300 },
-        { cat: 'praias', title: 'Geribá (Búzios)', rating: '4.9', desc: 'Badalação jovem e surf.', lat: -22.7758, lng: -41.9056 },
-        { cat: 'praias', title: 'Ferradurinha (Búzios)', rating: '4.8', desc: 'Pequena e linda. Aluguel de Caiaque.', lat: -22.7830, lng: -41.9100 },
-        { cat: 'praias', title: 'Azeda/Azedinha (Búzios)', rating: '4.7', desc: 'Acesso por escadaria. Visual incrível.', lat: -22.7450, lng: -41.8850 },
-        { cat: 'praias', title: 'João Fernandes (Búzios)', rating: '4.7', desc: 'Muitos peixes. Ótima estrutura.', lat: -22.7380, lng: -41.8780 },
-        { cat: 'praias', title: 'Prainhas do Pontal (Arraial)', rating: '5.0', desc: 'Escadaria famosa. Chegue 6h da manhã.', lat: -22.9765, lng: -42.0245 },
-        { cat: 'praias', title: 'Praia do Forno (Arraial)', rating: '4.9', desc: 'Trilha moderada. Visual caribenho.', lat: -22.9650, lng: -42.0100 },
-
-        // === GASTRONOMIA (Mix de preços) ===
-        { cat: 'gastronomia', title: 'Box 60', rating: '$$', desc: 'Container. Burger/Pizza. Perto de casa.', lat: -22.8650, lng: -41.9900 },
-        { cat: 'gastronomia', title: 'Picolino', rating: '$$$$', desc: 'O melhor restaurante da cidade. No canal.', lat: -22.8835, lng: -42.0211 },
-        { cat: 'gastronomia', title: 'Galápagos', rating: '$$$', desc: 'Na Passagem. Moqueca incrível.', lat: -22.8856, lng: -42.0165 },
-        { cat: 'gastronomia', title: 'Arcos do Canal', rating: '$$$', desc: 'Vista linda do canal. Romântico.', lat: -22.8850, lng: -42.0170 },
-        { cat: 'gastronomia', title: 'Sem Frescura', rating: '$$', desc: 'Burger artesanal top no centro.', lat: -22.8800, lng: -42.0220 },
-        { cat: 'gastronomia', title: 'Restaurante do Zé', rating: '$$$', desc: 'Frutos do mar tradicional na orla.', lat: -22.8900, lng: -42.0140 },
-        { cat: 'gastronomia', title: 'Chez Michou (Búzios)', rating: '$$', desc: 'Crepe lendário. Agito.', lat: -22.7547, lng: -41.8879 },
-        { cat: 'gastronomia', title: 'Bar do Zé (Búzios)', rating: '$$$$', desc: 'Jantar sofisticado na Orla Bardot.', lat: -22.7530, lng: -41.8850 },
-        { cat: 'gastronomia', title: 'Porto da Barra (Búzios)', rating: '$$$', desc: 'Polo gastronômico no cais. Pôr do sol.', lat: -22.7720, lng: -41.9200 },
-        { cat: 'gastronomia', title: 'McDonalds Cabo Frio', rating: '$', desc: 'Salvador da madrugada.', lat: -22.8790, lng: -42.0250 },
-
-        // === SERVIÇOS & PADARIAS ===
-        { cat: 'servicos', title: 'Supermercado do Peró', rating: '07h-22h', desc: 'Mercado grande mais próximo.', lat: -22.8631, lng: -41.9890 },
-        { cat: 'servicos', title: 'Padaria Remmar', rating: '06h-21h', desc: 'Tradicional. Ótimo pão francês.', lat: -22.8800, lng: -42.0210 },
-        { cat: 'servicos', title: 'Padaria do Peró', rating: '06h-20h', desc: 'Simples, mas resolve o café da manhã.', lat: -22.8650, lng: -41.9880 },
-        { cat: 'servicos', title: 'Assaí Atacadista', rating: 'Atacado', desc: 'Para compras grandes do grupo.', lat: -22.8750, lng: -42.0300 },
-        { cat: 'servicos', title: 'Shopping Park Lagos', rating: 'Shopping', desc: 'Cinema, lojas e ar condicionado.', lat: -22.8780, lng: -42.0350 },
-
-        // === FITNESS ===
-        { cat: 'fitness', title: 'Smart Fit Centro', rating: 'GymPass', desc: 'Grande. Aceita Black.', lat: -22.8800, lng: -42.0200 },
-        { cat: 'fitness', title: 'Arena CF Beach Tennis', rating: 'R$ 40', desc: 'Quadras de areia para alugar.', lat: -22.8920, lng: -42.0150 },
-        { cat: 'fitness', title: 'Academia do Canal', rating: '$$', desc: 'Visual top enquanto treina.', lat: -22.8840, lng: -42.0200 },
-        { cat: 'fitness', title: 'Calçadão do Peró', rating: 'Grátis', desc: 'Ótimo para correr de manhã.', lat: -22.8690, lng: -41.9860 },
-
-        // === SAÚDE (FARMÁCIAS) ===
-        { cat: 'saude', title: 'Drogaria Raia', rating: '24h', desc: 'No centro, perto do canal.', lat: -22.8820, lng: -42.0220 },
-        { cat: 'saude', title: 'Farmácia do Peró', rating: '08h-22h', desc: 'Pequena, mas perto de casa.', lat: -22.8640, lng: -41.9895 },
-        { cat: 'saude', title: 'Hospital Santa Izabel', rating: 'Emergência', desc: 'Principal hospital privado.', lat: -22.8810, lng: -42.0190 },
-
-        // === LAZER & CULTURA ===
-        { cat: 'lazer', title: 'Forte São Mateus', rating: 'História', desc: 'Cartão postal. Fotos clássicas.', lat: -22.8824, lng: -42.0097 },
-        { cat: 'lazer', title: 'Morro da Guia', rating: 'Mirante', desc: 'Pôr do sol 360 graus.', lat: -22.8850, lng: -42.0230 },
-        { cat: 'lazer', title: 'Rua dos Biquínis', rating: 'Compras', desc: 'Paraíso da moda praia.', lat: -22.8760, lng: -42.0120 },
-        { cat: 'lazer', title: 'Bairro da Passagem', rating: 'Passeio', desc: 'Becos históricos e arquitetura.', lat: -22.8856, lng: -42.0165 }
-    ];
-
-    /* --- INICIALIZAÇÃO DO MAPA --- */
-    const map = L.map('map', {
-        zoomControl: false, 
-        tap: true // Correção para mobile
-    }).setView(HOME_COORDS, 13);
-
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap',
-        maxZoom: 19
-    }).addTo(map);
-
-    // Marcador da CASA
-    const homeIcon = L.divIcon({
-        className: 'custom-div-icon',
-        html: `<div style='background-color:#000; width:36px; height:36px; border-radius:50%; display:flex; justify-content:center; align-items:center; border:2px solid white; box-shadow:0 2px 10px rgba(0,0,0,0.3);'><i class="fas fa-home" style="color:white; font-size:18px;"></i></div>`,
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
-    });
-    L.marker(HOME_COORDS, {icon: homeIcon}).addTo(map).bindPopup("<b>🏡 Base: Cond. Pássaros</b>");
-
-    let currentMarkers = [];
-
-    /* --- FUNÇÃO DE ÍCONES POR CATEGORIA --- */
-    function getIcon(category) {
-        let color = '#007AFF';
-        let icon = 'fa-map-marker-alt';
-
-        if(category === 'praias') { color = '#34C759'; icon = 'fa-umbrella-beach'; }
-        if(category === 'gastronomia') { color = '#FF9500'; icon = 'fa-utensils'; }
-        if(category === 'noite') { color = '#5856D6'; icon = 'fa-cocktail'; }
-        if(category === 'servicos') { color = '#AF52DE'; icon = 'fa-shopping-cart'; }
-        if(category === 'fitness') { color = '#FF2D55'; icon = 'fa-dumbbell'; }
-        if(category === 'saude') { color = '#FF3B30'; icon = 'fa-plus'; }
-        if(category === 'roteiro') { color = '#000000'; icon = 'fa-calendar-day'; }
-
-        return L.divIcon({
-            className: 'custom-div-icon',
-            html: `<div class="marker-pin" style="background:${color}"><i class="fas ${icon} marker-icon"></i></div>`,
-            iconSize: [30, 42],
-            iconAnchor: [15, 42],
-            popupAnchor: [0, -35]
-        });
-    }
-
-    /* --- RENDERIZAÇÃO --- */
-    function filterData(filter, element) {
-        // UI Update (Chips)
-        if(element) {
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            element.classList.add('active');
-        }
-
-        const container = document.getElementById('cards-container');
-        container.scrollTop = 0;
-        container.innerHTML = '';
-
-        // Remove markers antigos
-        currentMarkers.forEach(m => map.removeLayer(m));
-        currentMarkers = [];
-
-        // Filtra dados
-        const items = filter === 'all' 
-            ? db.filter(i => i.cat !== 'roteiro') 
-            : db.filter(i => i.cat === filter);
-
-        if(items.length === 0) {
-            container.innerHTML = '<div style="padding:20px; text-align:center; color:#999">Nenhum local encontrado nesta categoria.</div>';
-            return;
-        }
-
-        // Gera Lista e Marcadores
-        items.forEach(item => {
-            // HTML do Card
-            const card = document.createElement('div');
-            card.className = item.cat === 'roteiro' ? 'card timeline-card' : 'card';
-            
-            const roteiroTag = item.cat === 'roteiro' ? `<span class="day-label">${item.day}</span>` : '';
-            const ratingHtml = item.cat !== 'roteiro' ? `<span class="rating-badge">⭐ ${item.rating}</span>` : '';
-
-            card.innerHTML = `
-                ${roteiroTag}
-                <div class="card-header">
-                    <div class="card-title">${item.title}</div>
-                    ${ratingHtml}
+            <div class="list-container" id="cards-wrapper">
                 </div>
-                <div class="card-cat">${item.cat.toUpperCase()}</div>
-                <div class="card-info">${item.desc}</div>
-                <a href="https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}" target="_blank" class="action-link">
-                    <i class="fas fa-location-arrow"></i> Ir Agora
-                </a>
-            `;
+        </div>
+    </div>
 
-            // Clique no card move o mapa
-            card.onclick = (e) => {
-                // Se clicar no link, não move o mapa (deixa abrir o google)
-                if(e.target.tagName === 'A' || e.target.parentElement.tagName === 'A') return;
+    <script>
+        // --- 1. BASE DE DADOS (JSON SIMULADO) ---
+        // Coordenadas aproximadas para demonstração
+        const db = [
+            // ROTEIRO (Itens Especiais)
+            { id: 'r1', cat: 'roteiro', date: '27 DEZ', title: 'Chegada & Abastecimento', desc: 'Check-in e mercado pesado.', lat: -22.8475, lng: -41.9980, img: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=150&q=80', tip: 'Mercado Atacadão na entrada de CF' },
+            { id: 'r2', cat: 'roteiro', date: '28 DEZ', title: 'Ilha do Japonês', desc: 'Dia de sol em águas calmas.', lat: -22.8689, lng: -41.9967, img: 'https://images.unsplash.com/photo-1596395811365-c3d3dd52b270?auto=format&fit=crop&w=150&q=80', tip: 'Vá de táxi boat pelo Bairro da Passagem' },
+            { id: 'r3', cat: 'roteiro', date: '29 DEZ', title: 'Sunset no Porto da Barra', desc: 'Búzios Lifestyle.', lat: -22.7562, lng: -41.8903, img: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=150&q=80', tip: 'Chegue às 16h para pegar mesa no Anexo Bar' },
+            { id: 'r4', cat: 'roteiro', date: '31 DEZ', title: 'Réveillon Praia do Forte', desc: 'Virada clássica.', lat: -22.8856, lng: -42.0232, img: 'https://images.unsplash.com/photo-1506509939634-1c697c95cb38?auto=format&fit=crop&w=150&q=80', tip: 'Trânsito para tudo. Vá a pé se possível.' },
+            
+            // PRAIAS
+            { id: 1, cat: 'praias', title: 'Praia do Peró', desc: 'Bandeira Azul. Areia limpa e extensa.', lat: -22.8624, lng: -41.9845, rating: '4.8', price: 'Free', img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=150&q=80', tip: 'Ótima para surf no canto esquerdo' },
+            { id: 2, cat: 'praias', title: 'Praia das Conchas', desc: 'Ao lado do Peró, águas calmas.', lat: -22.8660, lng: -41.9750, rating: '4.9', price: 'Estac. Pago', img: 'https://images.unsplash.com/photo-1520483602335-3b3dd1c50d2e?auto=format&fit=crop&w=150&q=80', tip: 'Quiosques caros, leve cooler' },
+            { id: 3, cat: 'praias', title: 'Geribá (Búzios)', desc: 'A praia da badalação jovem.', lat: -22.7758, lng: -41.9056, rating: '4.7', price: '$$$', img: 'https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?auto=format&fit=crop&w=150&q=80', tip: 'Fishbone para o pós-praia' },
+            { id: 4, cat: 'praias', title: 'Prainhas do Pontal', desc: 'Caribe Brasileiro em Arraial.', lat: -22.9786, lng: -42.0233, rating: '5.0', price: 'Barco', img: 'https://images.unsplash.com/photo-1590001155093-a3c66ab0c3ff?auto=format&fit=crop&w=150&q=80', tip: 'Maré baixa de manhã é o ideal' },
+            { id: 5, cat: 'praias', title: 'Ferradurinha', desc: 'Pequena e cênica em Búzios.', lat: -22.7836, lng: -41.9050, rating: '4.6', price: 'Free', img: 'https://images.unsplash.com/photo-1592869508544-77a284e937d3?auto=format&fit=crop&w=150&q=80', tip: 'Alugue caiaque aqui' },
+
+            // GASTRONOMIA
+            { id: 6, cat: 'gastronomia', title: 'Picoleto', desc: 'Melhor sorvete da Passagem.', lat: -22.8800, lng: -42.0150, rating: '4.9', price: '$', img: 'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?auto=format&fit=crop&w=150&q=80', tip: 'Peça o de Ninho com Trufa' },
+            { id: 7, cat: 'gastronomia', title: 'Box 60 (Porto da Barra)', desc: 'Drinks e petiscos premium.', lat: -22.7565, lng: -41.8905, rating: '4.7', price: '$$$$', img: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&w=150&q=80', tip: 'Pôr do sol imbatível' },
+            { id: 8, cat: 'gastronomia', title: 'José Restaurante', desc: 'Alta gastronomia em Cabo Frio.', lat: -22.8820, lng: -42.0200, rating: '4.8', price: '$$$$', img: 'https://images.unsplash.com/photo-1550966871-3ed3c47e2ce2?auto=format&fit=crop&w=150&q=80', tip: 'Reserve com antecedência' },
+            { id: 9, cat: 'gastronomia', title: 'Creperia Chez Michou', desc: 'Clássico da Rua das Pedras.', lat: -22.7538, lng: -41.8885, rating: '4.5', price: '$$', img: 'https://images.unsplash.com/photo-1519624027092-2374ef06159c?auto=format&fit=crop&w=150&q=80', tip: 'Sempre lotado, mas a fila anda' },
+
+            // SERVIÇOS & SAUDE
+            { id: 10, cat: 'servicos', title: 'Atacadão Cabo Frio', desc: 'Compras pesadas.', lat: -22.8550, lng: -42.0100, rating: 'Cheap', price: '$', img: 'https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?auto=format&fit=crop&w=150&q=80', tip: 'Evite ir entre 18h-20h' },
+            { id: 11, cat: 'saude', title: 'Hosp. Santa Izabel', desc: 'Emergência Particular.', lat: -22.8790, lng: -42.0180, rating: '24h', price: 'Conv.', img: 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=150&q=80', tip: 'Melhor estrutura da região' },
+            { id: 12, cat: 'fitness', title: 'Academia Corpo & Mar', desc: 'Aceita GymPass.', lat: -22.8805, lng: -42.0210, rating: 'GymPass', price: '$$', img: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=150&q=80', tip: 'Ar condicionado forte' },
+            
+            // NOITE
+            { id: 13, cat: 'noite', title: 'Privilège Búzios', desc: 'Balada eletrônica top.', lat: -22.7540, lng: -41.8870, rating: 'Top', price: '$$$$$', img: 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?auto=format&fit=crop&w=150&q=80', tip: 'Compre ingresso antecipado online' },
+        ];
+
+        // --- 2. CONFIGURAÇÃO DO MAPA ---
+        const baseCoords = [-22.8475, -41.9980]; // Portaria Cond. Pássaros
+        const map = L.map('map', { zoomControl: false }).setView(baseCoords, 12);
+        
+        // Mover controles de zoom para canto inferior direito (melhor UX mobile)
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Marcador da Base (Casa)
+        const homeIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<i class="fas fa-home" style="color: #007AFF; font-size: 14px; line-height: 26px;"></i>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+        L.marker(baseCoords, {icon: homeIcon}).addTo(map).bindPopup("<b>Base:</b> Cond. dos Pássaros");
+
+        // Array para guardar marcadores ativos
+        let markers = [];
+
+        // --- 3. LÓGICA DA APLICAÇÃO ---
+
+        const cardsWrapper = document.getElementById('cards-wrapper');
+        const filters = document.querySelectorAll('.filter-pill');
+
+        // Função para gerar link do Google Maps
+        function getMapsLink(lat, lng, query) {
+            return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&destination_place_id=${encodeURIComponent(query)}`;
+        }
+
+        // Renderização dos Cards
+        function renderCards(data, isTimeline = false) {
+            cardsWrapper.innerHTML = '';
+            
+            // Limpar mapa
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            if(isTimeline) {
+                cardsWrapper.innerHTML = `<div class="timeline-container"></div>`;
+                const container = cardsWrapper.querySelector('.timeline-container');
                 
-                map.flyTo([item.lat, item.lng], 15);
-                
-                // No mobile, da um feedback visual
-                if(window.innerWidth < 768) {
-                   card.style.background = '#eef';
-                   setTimeout(() => card.style.background = '', 300);
-                }
-            };
+                data.forEach(item => {
+                    // Adicionar ao Mapa
+                    addMarkerToMap(item);
 
-            container.appendChild(card);
+                    // Criar HTML Timeline
+                    const el = document.createElement('div');
+                    el.className = 'timeline-item';
+                    el.onclick = () => focusOnMap(item.lat, item.lng);
+                    el.innerHTML = `
+                        <div class="timeline-date">${item.date}</div>
+                        <div class="card" style="margin:0;">
+                             <img src="${item.img}" class="card-img" alt="${item.title}" loading="lazy">
+                             <div class="card-content">
+                                <div class="card-header">
+                                    <h3 class="card-title">${item.title}</h3>
+                                </div>
+                                <p class="card-desc">${item.desc}</p>
+                                <div class="golden-tip"><i class="fas fa-lightbulb"></i> ${item.tip}</div>
+                                <a href="${getMapsLink(item.lat, item.lng, item.title)}" target="_blank" class="btn-nav" onclick="event.stopPropagation()">
+                                    <i class="fas fa-location-arrow"></i> Ir Agora
+                                </a>
+                             </div>
+                        </div>
+                    `;
+                    container.appendChild(el);
+                });
+            } else {
+                data.forEach(item => {
+                    // Adicionar ao Mapa
+                    addMarkerToMap(item);
 
-            // Adiciona Marcador
-            const marker = L.marker([item.lat, item.lng], {icon: getIcon(item.cat)})
-                .addTo(map)
-                .bindPopup(`<b>${item.title}</b><br>${item.desc}`);
-            currentMarkers.push(marker);
+                    // Criar HTML Card Padrão
+                    const el = document.createElement('div');
+                    el.className = 'card';
+                    el.onclick = () => focusOnMap(item.lat, item.lng);
+                    el.innerHTML = `
+                        <img src="${item.img}" class="card-img" alt="${item.title}" loading="lazy">
+                        <div class="card-content">
+                            <div class="card-header">
+                                <h3 class="card-title">${item.title}</h3>
+                                <div class="badge-row">
+                                    ${item.rating ? `<span class="badge rating">${item.rating}</span>` : ''}
+                                    ${item.price ? `<span class="badge price">${item.price}</span>` : ''}
+                                </div>
+                            </div>
+                            <p class="card-desc">${item.desc}</p>
+                            ${item.tip ? `<div class="golden-tip"><i class="fas fa-lightbulb"></i> ${item.tip}</div>` : ''}
+                            <a href="${getMapsLink(item.lat, item.lng, item.title)}" target="_blank" class="btn-nav" onclick="event.stopPropagation()">
+                                <i class="fas fa-location-arrow"></i> Navegar
+                            </a>
+                        </div>
+                    `;
+                    cardsWrapper.appendChild(el);
+                });
+            }
+        }
+
+        // Função auxiliar de mapa
+        function addMarkerToMap(item) {
+            let iconColor = '#333';
+            let iconChar = '<i class="fas fa-map-marker-alt"></i>';
+            
+            if(item.cat === 'praias') { iconColor = '#007AFF'; iconChar = '🏖️'; }
+            if(item.cat === 'gastronomia') { iconColor = '#FF9500'; iconChar = '🍤'; }
+            if(item.cat === 'noite') { iconColor = '#5856D6'; iconChar = '🍸'; }
+            
+            const icon = L.divIcon({
+                className: 'custom-marker',
+                html: `<span style="font-size:14px">${iconChar}</span>`,
+                iconSize: [30, 30]
+            });
+
+            const marker = L.marker([item.lat, item.lng], {icon: icon})
+                .bindPopup(`<b>${item.title}</b><br>${item.desc}`)
+                .addTo(map);
+            markers.push(marker);
+        }
+
+        // Interação de Foco
+        function focusOnMap(lat, lng) {
+            // No mobile, faz scroll suave para o mapa
+            if(window.innerWidth <= 768) {
+               window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            map.flyTo([lat, lng], 15, {
+                animate: true,
+                duration: 1.5
+            });
+        }
+
+        // Lógica de Filtro
+        window.filterData = function(category) {
+            // Atualizar UI dos Pills
+            filters.forEach(f => f.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Filtrar Dados
+            const filtered = db.filter(item => item.cat === category);
+            
+            // Renderizar (Verificar se é roteiro para layout especial)
+            renderCards(filtered, category === 'roteiro');
+
+            // Ajustar Zoom do mapa para caber todos os pontos
+            if(filtered.length > 0) {
+                const group = new L.featureGroup(markers);
+                map.flyToBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            // Ativa o primeiro filtro automaticamente (Roteiro)
+            document.querySelector('.filter-pill.special').click();
         });
 
-        // Ajuste de Zoom para caber todos os pontos
-        if(currentMarkers.length > 0) {
-            const group = new L.featureGroup(currentMarkers);
-            map.fitBounds(group.getBounds(), {padding: [50, 50]});
-        }
-    }
-
-    // Inicializa com "Roteiro" se for a primeira vez, ou "All"
-    filterData('roteiro'); 
-
-</script>
+    </script>
 </body>
 </html>
